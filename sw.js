@@ -1,7 +1,9 @@
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open('lic-manager-store').then((cache) => cache.addAll([
-      '/index.html',
+      './',
+      './index.html',
+      './manifest.json'
     ])),
   );
 });
