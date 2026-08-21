@@ -1,7 +1,7 @@
 {
   "name": "LIC Policy Manager",
   "short_name": "LIC Manager",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#003366",
   "theme_color": "#003366",
