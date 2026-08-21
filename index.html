@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#003366">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Service Worker Registered'));
+  }
+</script>
+ src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        licBlue: '#003366',
+                        licYellow: '#FCCC0A',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #003366; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #002244; }
+        .modal-transition { transition: all 0.3s ease-in-out; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen">
+
+    <!-- Mobile-First Container -->
+    <div class="max-w-xl mx-auto bg-gray-50 min-h-screen shadow-2xl overflow-hidden relative pb-24">
+        
+        <!-- Header Section -->
+        <header class="bg-licBlue shadow-md sticky top-0 z-40">
+            <div class="px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <label for="logoUpload" class="cursor-pointer relative group block h-12 w-12 rounded bg-white p-0.5 shadow-sm overflow-hidden flex-shrink-0">
+                        <img id="appLogo" src="https://upload.wikimedia.org/wikipedia/en/thumb/8/83/Life_Insurance_Corporation_of_India_logo.svg/1200px-Life_Insurance_Corporation_of_India_logo.svg.png" 
+                             alt="Logo" class="h-full w-full object-cover">
+                        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fa-solid fa-camera text-white text-xs"></i>
+                        </div>
+                    </label>
+                    <input type="file" id="logoUpload" accept="image/*" class="hidden" onchange="updateLogo(event)">
+                    
+                    <div>
+                        <h1 class="text-xl font-bold text-licYellow tracking-wide">LIC Manager</h1>
+                        <p class="text-white text-[10px] opacity-80">Offline Policy Tracker</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <!-- Export Data Button -->
+                    <button onclick="exportToCSV()" class="bg-white text-licBlue h-10 w-10 flex items-center justify-center rounded-full shadow hover:bg-gray-200 transition-colors flex-shrink-0" title="Download Updated CSV">
+                        <i class="fa-solid fa-download text-lg"></i>
+                    </button>
+                    <!-- Import CSV Button -->
+                    <label for="csvUpload" class="cursor-pointer bg-licYellow text-licBlue h-10 w-10 flex items-center justify-center rounded-full shadow hover:bg-yellow-400 transition-colors flex-shrink-0" title="Upload New CSV">
+                        <i class="fa-solid fa-file-csv text-lg"></i>
+                    </label>
+                    <input type="file" id="csvUpload" accept=".csv" class="hidden" onchange="handleFileUpload(event)">
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="px-4 py-5">
+            
+            <!-- Horizontal FUP Filter Chips -->
+            <div class="mb-5">
+                <p class="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider pl-1"><i class="fa-regular fa-calendar-days mr-1"></i> FUP Timeline</p>
+                <div class="flex overflow-x-auto gap-2 pb-1 scrollbar-hide">
+                    <button onclick="setFupFilter('ALL')" id="filter_ALL" class="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap bg-licBlue text-white shadow-sm transition-colors border border-licBlue">
+                        All Policies
+                    </button>
+                    <button onclick="setFupFilter('CURRENT')" id="filter_CURRENT" class="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-300 shadow-sm transition-colors">
+                        Current Month
+                    </button>
+                    <button onclick="setFupFilter('NEXT')" id="filter_NEXT" class="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-300 shadow-sm transition-colors">
+                        Next Month
+                    </button>
+                    <button onclick="setFupFilter('LAST_6')" id="filter_LAST_6" class="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-300 shadow-sm transition-colors">
+                        Last 6 Months
+                    </button>
+                    <button onclick="setFupFilter('CUSTOM')" id="filter_CUSTOM" class="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-300 shadow-sm transition-colors">
+                        Custom Range
+                    </button>
+                </div>
+                
+                <!-- Custom Date Picker -->
+                <div id="customDateContainer" class="hidden mt-3 p-3 bg-white rounded-xl shadow-sm border border-gray-200 flex gap-2 items-end">
+                    <div class="flex-1">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">From Date</label>
+                        <input type="date" id="customFromDate" class="w-full text-xs p-2 font-bold text-gray-700 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:border-licBlue">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">To Date</label>
+                        <input type="date" id="customToDate" class="w-full text-xs p-2 font-bold text-gray-700 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:border-licBlue">
+                    </div>
+                    <button onclick="applyFilters()" class="bg-licBlue text-white px-3 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-800 transition-colors">
+                        Go
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Controls -->
+            <div class="bg-white rounded-2xl shadow-sm p-4 mb-5 border border-gray-200">
+                <div class="flex flex-col gap-3">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-regular fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="searchName" placeholder="Search Name..." 
+                               class="w-full pl-10 pr-4 py-3 bg-gray-50 font-bold rounded-xl border border-gray-200 focus:outline-none focus:border-licBlue focus:ring-1 focus:ring-licBlue transition-colors"
+                               onkeyup="applyFilters()">
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-hashtag text-gray-400"></i>
+                        </div>
+                        <input type="text" id="searchNumber" placeholder="Search Policy No..." 
+                               class="w-full pl-10 pr-4 py-3 bg-gray-50 font-bold rounded-xl border border-gray-200 focus:outline-none focus:border-licBlue focus:ring-1 focus:ring-licBlue transition-colors"
+                               onkeyup="applyFilters()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sorting & Results Count -->
+            <div class="flex items-center justify-between mb-4 px-1">
+                <p class="font-bold text-gray-600 text-sm" id="resultCount">0 Policies</p>
+                <div class="relative">
+                    <select id="sortSelect" onchange="handleSort()" class="appearance-none bg-white font-bold border border-gray-300 text-gray-700 text-xs rounded-lg focus:ring-licBlue focus:border-licBlue block px-3 py-2 pr-8 shadow-sm outline-none">
+                        <option value="SNo-asc">Sort: Default</option>
+                        <option value="Policy Holder-asc">Name (A-Z)</option>
+                        <option value="FUP Date-asc">FUP (Oldest First)</option>
+                        <option value="FUP Date-desc">FUP (Newest First)</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vertical Card List (Android Layout) -->
+            <div id="policyListContainer" class="flex flex-col gap-4">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="noDataMessage" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-gray-200 shadow-sm mt-4">
+                <i class="fa-solid fa-file-invoice text-gray-300 text-6xl mb-4"></i>
+                <p class="text-gray-500 font-bold text-base" id="emptyTitle">Welcome to LIC Manager</p>
+                <p class="text-gray-400 text-sm mt-1" id="emptyDesc">Please upload your CSV file once. It will be saved permanently.</p>
+                <label for="csvUpload" class="inline-block mt-4 cursor-pointer bg-licBlue text-white font-bold py-2 px-6 rounded-lg shadow hover:bg-blue-800 transition-colors">
+                    Upload File Now
+                </label>
+            </div>
+        </main>
+
+        <!-- Floating Add New Policy Button -->
+        <button onclick="openAddModal()" class="fixed bottom-6 right-6 bg-licYellow text-licBlue h-14 w-14 rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.3)] flex items-center justify-center text-2xl font-bold hover:scale-105 transition-transform z-30 border-2 border-white">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- Edit & Share Modal (Full Screen for Mobile) -->
+    <div id="policyModal" class="fixed inset-0 z-50 hidden bg-gray-100 flex flex-col modal-transition opacity-0 pointer-events-none max-w-xl mx-auto">
+        
+        <!-- Modal Header -->
+        <div class="bg-licBlue text-white px-4 py-4 shadow-md flex justify-between items-center z-10">
+            <h3 class="text-lg font-bold flex items-center gap-2" id="modalTitle">
+                <i class="fa-solid fa-file-lines text-licYellow"></i> Policy Details
+            </h3>
+            <button onclick="closeModal()" class="text-white bg-white bg-opacity-20 h-8 w-8 rounded-full flex items-center justify-center hover:bg-opacity-30 transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        
+        <!-- Modal Body (Scrollable with all fields) -->
+        <div class="p-4 overflow-y-auto flex-grow bg-gray-100 pb-24" id="modalBody">
+            <div class="flex flex-col gap-4">
+                
+                <!-- Personal Details Group -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
+                    <p class="text-licBlue font-bold border-b border-gray-100 pb-2 mb-1"><i class="fa-solid fa-user-circle mr-1"></i> Personal Details</p>
+                    
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Policy Holder Name</label>
+                        <input type="text" id="edit_name" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex flex-col">
+                            <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">DOB</label>
+                            <input type="text" id="edit_dob" placeholder="DD/MM/YYYY" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Mobile</label>
+                            <input type="text" id="edit_mobile" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Email</label>
+                        <input type="email" id="edit_email" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Address</label>
+                        <textarea id="edit_address" rows="2" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm resize-none"></textarea>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Nominee</label>
+                        <input type="text" id="edit_nominee" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                    </div>
+                </div>
+
+                <!-- Policy Details Group -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
+                    <p class="text-licBlue font-bold border-b border-gray-100 pb-2 mb-1"><i class="fa-solid fa-shield-halved mr-1"></i> Policy Details</p>
+                    
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Policy Number</label>
+                        <input type="text" id="edit_policyNo" class="w-full px-3 py-2.5 font-bold border border-gray-200 bg-gray-100 rounded-xl outline-none text-gray-800 text-sm">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex flex-col">
+                            <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Plan</label>
+                            <input type="text" id="edit_plan" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Commencement Date</label>
+                            <input type="text" id="edit_doc" placeholder="DD/MM/YYYY" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="flex flex-col">
+                            <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Term</label>
+                            <input type="text" id="edit_term" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">PPT</label>
+                            <input type="text" id="edit_ppt" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Mode</label>
+                            <input type="text" id="edit_mode" placeholder="Y/H/Q/M" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm uppercase">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Sum Assured (₹)</label>
+                        <input type="number" id="edit_sumAssured" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
+                    </div>
+                </div>
+
+                <!-- Financial Group (Premium & FUP & Calculator) -->
+                <div class="bg-blue-50 p-4 rounded-2xl shadow-sm border border-blue-100 flex flex-col gap-3 relative">
+                    <p class="text-licBlue font-bold border-b border-blue-200 pb-2 mb-1"><i class="fa-solid fa-indian-rupee-sign mr-1"></i> Premium & FUP</p>
+                    
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-bold text-licBlue mb-1 uppercase">Premium (₹)</label>
+                        <input type="number" id="edit_premium" class="w-full px-3 py-2.5 bg-white font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-gray-900 text-sm">
+                    </div>
+                    
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-bold text-licBlue mb-1 uppercase">Next FUP Date</label>
+                        <input type="text" id="edit_fup" placeholder="DD/MM/YYYY" class="w-full px-3 py-2.5 bg-white font-bold border-2 border-licBlue rounded-xl focus:ring-2 focus:ring-licYellow outline-none text-licBlue text-sm">
+                    </div>
+
+                    <!-- Calculate Total Premium Section -->
+                    <div class="bg-green-50 p-3 rounded-xl border border-green-200 flex flex-col items-center justify-center gap-2 mt-2 shadow-sm">
+                        <button onclick="calculateTotalPremium()" class="bg-[#1ebe57] text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md hover:bg-green-600 transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-calculator"></i> Calculate Total Premium Paid
+                        </button>
+                        <div id="totalPremiumContainer" class="hidden w-full text-center mt-2 p-2 bg-white rounded-lg border border-green-100">
+                            <p class="text-[10px] text-green-600 font-bold uppercase tracking-wider">Total Deposited Amount</p>
+                            <p id="totalPremiumDisplay" class="text-xl font-bold text-green-800 mt-1">₹ 0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Area -->
+                <div class="text-center h-6 mb-4">
+                    <p id="saveMsg" class="text-green-600 font-bold text-sm hidden"><i class="fa-solid fa-check-circle"></i> Policy Saved Successfully!</p>
+                </div>
+
+            </div>
+        </div>
+        
+        <!-- Modal Footer Actions (Sticky Bottom) -->
+        <div class="absolute bottom-0 w-full bg-white p-4 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] flex gap-3 z-20">
+            <button onclick="saveDetails()" class="flex-1 bg-licBlue text-white py-3.5 rounded-xl hover:bg-blue-800 transition-colors shadow-lg font-bold flex items-center justify-center gap-2 text-sm">
+                <i class="fa-solid fa-save"></i> Save All
+            </button>
+            <button onclick="shareViaWhatsApp()" class="flex-1 bg-[#25D366] text-white py-3.5 rounded-xl hover:bg-[#1ebe57] transition-colors shadow-lg font-bold flex items-center justify-center gap-2 text-sm">
+                <i class="fa-brands fa-whatsapp text-lg"></i> Share
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let allPolicies = [];
+        let filteredPolicies = [];
+        let currentEditingPolicy = null;
+        let currentTimelineFilter = 'ALL';
+        let isAddingNew = false;
+
+        // --- Load Data from Browser Memory (Local Storage) on Startup ---
+        window.onload = function() {
+            const savedLogo = localStorage.getItem('lic_app_logo');
+            if(savedLogo) {
+                document.getElementById('appLogo').src = savedLogo;
+            }
+
+            const savedData = localStorage.getItem('lic_policies_data');
+            if (savedData) {
+                allPolicies = JSON.parse(savedData);
+                document.getElementById('sortSelect').value = "SNo-asc";
+                setFupFilter('ALL'); 
+            } else {
+                renderList([]); // Shows empty state asking to upload
+            }
+        }
+
+        // --- Save Data Permanently to Browser ---
+        function saveToLocalStorage() {
+            localStorage.setItem('lic_policies_data', JSON.stringify(allPolicies));
+        }
+
+        // --- User Logo Upload ---
+        function updateLogo(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const logoData = e.target.result;
+                    document.getElementById('appLogo').src = logoData;
+                    localStorage.setItem('lic_app_logo', logoData); // Save logo permanently
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- File Upload via PapaParse (CSV) ---
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                processCSVData(text);
+            };
+            reader.readAsText(file);
+        }
+
+        function processCSVData(csvText) {
+            let lines = csvText.split('\n');
+            let headerIndex = 0;
+            
+            for(let i = 0; i < lines.length; i++) {
+                if(lines[i].includes('Policy Number') && (lines[i].includes('Policy Holder') || lines[i].includes('Name'))) {
+                    headerIndex = i;
+                    break;
+                }
+            }
+            
+            let validCSV = lines.slice(headerIndex).join('\n');
+
+            Papa.parse(validCSV, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    processParsedData(results.data);
+                }
+            });
+        }
+
+        function processParsedData(jsonData) {
+            allPolicies = [];
+            let serialCounter = 1;
+
+            jsonData.forEach(row => {
+                const policyNo = row['Policy Number'] || row['Policy No'];
+                const policyName = row['Policy Holder'] || row['Name'];
+                
+                if (policyNo && policyName) {
+                    let cleanedRow = { ...row };
+                    cleanedRow['Policy Number'] = String(policyNo).trim();
+                    cleanedRow['Policy Holder'] = String(policyName).trim();
+                    
+                    const existingSNo = parseInt(cleanedRow['SNo']);
+                    if (isNaN(existingSNo)) {
+                        cleanedRow['SNo'] = serialCounter;
+                    }
+                    
+                    allPolicies.push(cleanedRow);
+                    serialCounter++;
+                }
+            });
+
+            saveToLocalStorage(); // Save new file to memory
+            document.getElementById('sortSelect').value = "SNo-asc";
+            setFupFilter('ALL'); 
+        }
+
+        // --- Export Data back to CSV ---
+        function exportToCSV() {
+            if(allPolicies.length === 0) {
+                alert("No data available to download!");
+                return;
+            }
+            
+            const csv = Papa.unparse(allPolicies);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", "updated_lic_policies.csv");
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- FUP Timeline Filter Logic ---
+        function setFupFilter(filterType) {
+            currentTimelineFilter = filterType;
+            
+            const ids = ['ALL', 'CURRENT', 'NEXT', 'LAST_6', 'CUSTOM'];
+            ids.forEach(id => {
+                const btn = document.getElementById('filter_' + id);
+                if (id === filterType) {
+                    btn.className = "px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap bg-licBlue text-white shadow-sm transition-colors border border-licBlue";
+                } else {
+                    btn.className = "px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-300 shadow-sm transition-colors";
+                }
+            });
+
+            if(filterType === 'CUSTOM') {
+                document.getElementById('customDateContainer').classList.remove('hidden');
+            } else {
+                document.getElementById('customDateContainer').classList.add('hidden');
+                applyFilters();
+            }
+        }
+
+        function checkFupTimeline(fupDateStr) {
+            if (currentTimelineFilter === 'ALL') return true;
+            if (!fupDateStr || fupDateStr === '-' || fupDateStr === 'null') return false;
+
+            let parts = fupDateStr.includes('/') ? fupDateStr.split('/') : fupDateStr.split('-');
+            if (parts.length !== 3) return false;
+
+            let fupDate = new Date(parts[2], parseInt(parts[1]) - 1, parts[0]);
+            let now = new Date();
+            let currentMonth = now.getMonth();
+            let currentYear = now.getFullYear();
+
+            if (currentTimelineFilter === 'CURRENT') {
+                return fupDate.getMonth() === currentMonth && fupDate.getFullYear() === currentYear;
+            } 
+            else if (currentTimelineFilter === 'NEXT') {
+                let nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+                let nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+                return fupDate.getMonth() === nextMonth && fupDate.getFullYear() === nextYear;
+            } 
+            else if (currentTimelineFilter === 'LAST_6') {
+                let sixMonthsAgo = new Date();
+                sixMonthsAgo.setMonth(now.getMonth() - 6);
+                sixMonthsAgo.setDate(1); 
+                sixMonthsAgo.setHours(0,0,0,0);
+                
+                let startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
+                return fupDate >= sixMonthsAgo && fupDate < startOfCurrentMonth;
+            }
+            else if (currentTimelineFilter === 'CUSTOM') {
+                let fromVal = document.getElementById('customFromDate').value;
+                let toVal = document.getElementById('customToDate').value;
+                if (!fromVal || !toVal) return true; 
+
+                let fromParts = fromVal.split('-');
+                let toParts = toVal.split('-');
+                let fromDate = new Date(fromParts[0], parseInt(fromParts[1]) - 1, fromParts[2]);
+                let toDate = new Date(toParts[0], parseInt(toParts[1]) - 1, toParts[2]);
+                
+                return fupDate >= fromDate && fupDate <= toDate;
+            }
+            return true;
+        }
+
+        // --- Search and Apply Filters ---
+        function applyFilters() {
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+            const searchNumber = document.getElementById('searchNumber').value.toLowerCase();
+
+            filteredPolicies = allPolicies.filter(policy => {
+                const name = String(policy['Policy Holder'] || '').toLowerCase();
+                const num = String(policy['Policy Number'] || '').toLowerCase();
+                
+                const matchesSearch = name.includes(searchName) && num.includes(searchNumber);
+                const matchesTimeline = checkFupTimeline(policy['FUP Date']);
+                
+                return matchesSearch && matchesTimeline;
+            });
+
+            handleSort();
+        }
+
+        // --- Sorting Logic ---
+        function getSortableDate(dateStr) {
+            if (!dateStr || dateStr === '-' || dateStr === 'null') return '00000000';
+            let parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
+            if (parts.length === 3) {
+                return parts[2] + parts[1].padStart(2, '0') + parts[0].padStart(2, '0');
+            }
+            return '00000000';
+        }
+
+        function handleSort() {
+            const sortVal = document.getElementById('sortSelect').value.split('-');
+            const column = sortVal[0];
+            const isAscending = sortVal[1] === 'asc';
+
+            filteredPolicies.sort((a, b) => {
+                let valA = a[column] || '';
+                let valB = b[column] || '';
+
+                if (column === 'SNo' || column === 'Premium') {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else if (column === 'FUP Date') {
+                    valA = getSortableDate(valA);
+                    valB = getSortableDate(valB);
+                } else {
+                    valA = String(valA).toLowerCase();
+                    valB = String(valB).toLowerCase();
+                }
+
+                if (valA < valB) return isAscending ? -1 : 1;
+                if (valA > valB) return isAscending ? 1 : -1;
+                return 0;
+            });
+            renderList(filteredPolicies);
+        }
+
+        function renderList(data) {
+            const container = document.getElementById('policyListContainer');
+            const noDataMsg = document.getElementById('noDataMessage');
+            const resultCount = document.getElementById('resultCount');
+            const emptyTitle = document.getElementById('emptyTitle');
+            const emptyDesc = document.getElementById('emptyDesc');
+            
+            container.innerHTML = '';
+            resultCount.innerText = `${data.length} Policies`;
+
+            if (data.length === 0) {
+                if (allPolicies.length > 0) {
+                    emptyTitle.innerText = "No Matches Found";
+                    emptyDesc.innerText = "Try changing search or timeline filter.";
+                } else {
+                    emptyTitle.innerText = "Welcome to LIC Manager";
+                    emptyDesc.innerText = "Please upload your CSV file once. It will be saved permanently.";
+                }
+                noDataMsg.classList.remove('hidden');
+                return;
+            } else {
+                noDataMsg.classList.add('hidden');
+            }
+
+            data.forEach((policy) => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl shadow-sm border border-gray-200 relative";
+                
+                const sNo = policy['SNo'] || '-';
+                const name = policy['Policy Holder'] || '-';
+                const pNo = policy['Policy Number'] || '-';
+                const fup = policy['FUP Date'] || '-';
+                const premium = policy['Premium'] || '-';
+                const initial = name !== '-' ? name.charAt(0) : 'U';
+
+                card.innerHTML = `
+                    <div class="absolute top-3 right-4 bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200">
+                        #${sNo}
+                    </div>
+                    
+                    <div class="flex items-start gap-3 mb-4">
+                        <div class="h-12 w-12 rounded-full bg-blue-50 border border-blue-100 text-licBlue flex items-center justify-center font-bold text-xl flex-shrink-0">
+                            ${initial}
+                        </div>
+                        <div class="pt-1 pr-6">
+                            <p class="font-bold text-gray-900 text-base leading-tight">${name}</p>
+                            <button onclick="openModal('${pNo}')" class="text-licBlue font-bold text-sm mt-1 decoration-2 underline-offset-4 underline flex items-center gap-1 active:text-licYellow">
+                                ${pNo} <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <div>
+                            <p class="text-gray-400 font-bold text-[10px] uppercase tracking-wide">Premium</p>
+                            <p class="font-bold text-gray-800 text-sm mt-0.5">₹ ${premium}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-gray-400 font-bold text-[10px] uppercase tracking-wide">Next FUP</p>
+                            <div class="inline-block mt-0.5 px-2 py-1 bg-green-100 border border-green-200 text-green-800 rounded font-bold text-xs">
+                                ${fup}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- Edit / Add Modal Functions ---
+        function openAddModal() {
+            isAddingNew = true;
+            currentEditingPolicy = null;
+
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-plus-circle text-licYellow"></i> Add New Policy';
+            
+            document.getElementById('edit_name').value = '';
+            document.getElementById('edit_policyNo').value = '';
+            document.getElementById('edit_policyNo').readOnly = false;
+            document.getElementById('edit_policyNo').classList.remove('cursor-not-allowed', 'bg-gray-100');
+            document.getElementById('edit_policyNo').classList.add('bg-white');
+            
+            document.getElementById('edit_dob').value = '';
+            document.getElementById('edit_mobile').value = '';
+            document.getElementById('edit_email').value = '';
+            document.getElementById('edit_address').value = '';
+            document.getElementById('edit_nominee').value = '';
+            document.getElementById('edit_plan').value = '';
+            document.getElementById('edit_doc').value = '';
+            document.getElementById('edit_term').value = '';
+            document.getElementById('edit_ppt').value = '';
+            document.getElementById('edit_mode').value = '';
+            document.getElementById('edit_sumAssured').value = '';
+            document.getElementById('edit_premium').value = '';
+            document.getElementById('edit_fup').value = '';
+
+            document.getElementById('totalPremiumContainer').classList.add('hidden');
+            document.getElementById('saveMsg').classList.add('hidden');
+
+            const modal = document.getElementById('policyModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.add('opacity-100');
+            }, 10);
+        }
+
+        function openModal(policyNo) {
+            const policy = allPolicies.find(p => p['Policy Number'] === policyNo);
+            if (!policy) return;
+
+            isAddingNew = false;
+            currentEditingPolicy = policy;
+
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-file-lines text-licYellow"></i> Policy Details';
+
+            document.getElementById('edit_name').value = policy['Policy Holder'] || '';
+            document.getElementById('edit_policyNo').value = policy['Policy Number'] || '';
+            document.getElementById('edit_policyNo').readOnly = true;
+            document.getElementById('edit_policyNo').classList.add('cursor-not-allowed', 'bg-gray-100');
+            document.getElementById('edit_policyNo').classList.remove('bg-white');
+
+            document.getElementById('edit_dob').value = policy['DOB'] || '';
+            document.getElementById('edit_mobile').value = policy['Mobile'] || '';
+            document.getElementById('edit_email').value = policy['Email'] || '';
+            document.getElementById('edit_address').value = policy['Address'] || '';
+            document.getElementById('edit_nominee').value = policy['Nominee'] || '';
+            document.getElementById('edit_plan').value = policy['Plan'] || '';
+            document.getElementById('edit_doc').value = policy['Commecement Date'] || policy['Commencement Date'] || '';
+            document.getElementById('edit_term').value = policy['Term'] || '';
+            document.getElementById('edit_ppt').value = policy['PPT'] || '';
+            document.getElementById('edit_mode').value = policy['Mode'] || '';
+            document.getElementById('edit_sumAssured').value = policy['Sum Assured'] || '';
+            document.getElementById('edit_premium').value = policy['Premium'] || '';
+            document.getElementById('edit_fup').value = policy['FUP Date'] || '';
+
+            document.getElementById('totalPremiumContainer').classList.add('hidden');
+            document.getElementById('saveMsg').classList.add('hidden');
+
+            const modal = document.getElementById('policyModal');
+            modal.classList.remove('hidden');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.add('opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('policyModal');
+            
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                currentEditingPolicy = null;
+                isAddingNew = false;
+            }, 300);
+        }
+
+        function saveDetails() {
+            let p;
+            if(isAddingNew) {
+                let pNo = document.getElementById('edit_policyNo').value.trim();
+                if(!pNo) {
+                    alert("Policy Number is required!");
+                    return;
+                }
+                p = {};
+                p['SNo'] = allPolicies.length + 1;
+                allPolicies.push(p);
+            } else {
+                if(!currentEditingPolicy) return;
+                p = currentEditingPolicy;
+            }
+            
+            p['Policy Holder'] = document.getElementById('edit_name').value.trim();
+            p['Policy Number'] = document.getElementById('edit_policyNo').value.trim();
+            p['DOB'] = document.getElementById('edit_dob').value.trim();
+            p['Mobile'] = document.getElementById('edit_mobile').value.trim();
+            p['Email'] = document.getElementById('edit_email').value.trim();
+            p['Address'] = document.getElementById('edit_address').value.trim();
+            p['Nominee'] = document.getElementById('edit_nominee').value.trim();
+            p['Plan'] = document.getElementById('edit_plan').value.trim();
+            
+            if('Commecement Date' in p || isAddingNew) {
+                p['Commecement Date'] = document.getElementById('edit_doc').value.trim();
+            } else {
+                p['Commencement Date'] = document.getElementById('edit_doc').value.trim();
+            }
+            
+            p['Term'] = document.getElementById('edit_term').value.trim();
+            p['PPT'] = document.getElementById('edit_ppt').value.trim();
+            p['Mode'] = document.getElementById('edit_mode').value.trim();
+            p['Sum Assured'] = document.getElementById('edit_sumAssured').value.trim();
+            p['Premium'] = document.getElementById('edit_premium').value.trim();
+            p['FUP Date'] = document.getElementById('edit_fup').value.trim();
+            
+            saveToLocalStorage(); // UPDATE MEMORY
+            
+            const saveMsg = document.getElementById('saveMsg');
+            saveMsg.classList.remove('hidden');
+            
+            applyFilters();
+            
+            setTimeout(() => {
+                saveMsg.classList.add('hidden');
+                if (isAddingNew) {
+                    closeModal();
+                }
+            }, 1500);
+        }
+
+        // --- Calculate Total Premium Paid ---
+        function calculateTotalPremium() {
+            let docStr = document.getElementById('edit_doc').value.trim();
+            let fupStr = document.getElementById('edit_fup').value.trim();
+            let premiumStr = document.getElementById('edit_premium').value.trim();
+            let mode = String(document.getElementById('edit_mode').value).toUpperCase().trim();
+
+            if(!docStr || !fupStr || !premiumStr || !mode) {
+                alert("Ensure DOC, FUP Date, Premium, and Mode are correctly filled in DD/MM/YYYY format.");
+                return;
+            }
+
+            let docParts = docStr.includes('/') ? docStr.split('/') : docStr.split('-');
+            let fupParts = fupStr.includes('/') ? fupStr.split('/') : fupStr.split('-');
+            
+            if(docParts.length !== 3 || fupParts.length !== 3) {
+                alert("Dates must be exactly in DD/MM/YYYY format.");
+                return;
+            }
+
+            let doc = new Date(docParts[2], parseInt(docParts[1]) - 1, docParts[0]);
+            let fup = new Date(fupParts[2], parseInt(fupParts[1]) - 1, fupParts[0]);
+            let premium = parseFloat(premiumStr);
+
+            let monthsDiff = (fup.getFullYear() - doc.getFullYear()) * 12 + (fup.getMonth() - doc.getMonth());
+            let installments = 0;
+
+            if(mode === 'M' || mode === 'SSS' || mode === 'MONTHLY') installments = monthsDiff;
+            else if(mode === 'Q' || mode === 'QUARTERLY') installments = monthsDiff / 3;
+            else if(mode === 'H' || mode === 'HALF YEARLY') installments = monthsDiff / 6;
+            else if(mode === 'Y' || mode === 'YEARLY') installments = monthsDiff / 12;
+            else if(mode === 'S' || mode === 'SINGLE') installments = 1;
+
+            let totalPaid = Math.max(0, Math.round(installments)) * premium;
+            
+            document.getElementById('totalPremiumDisplay').innerText = '₹ ' + totalPaid.toLocaleString('en-IN');
+            document.getElementById('totalPremiumContainer').classList.remove('hidden');
+        }
+
+        // --- WhatsApp Share ---
+        function shareViaWhatsApp() {
+            let name = document.getElementById('edit_name').value.trim();
+            let pNo = document.getElementById('edit_policyNo').value.trim();
+            let premium = document.getElementById('edit_premium').value.trim();
+            let fup = document.getElementById('edit_fup').value.trim();
+            
+            if (!pNo) return;
+            
+            let text = `*LIC Policy Details* 📝\n\n`;
+            text += `*Name:* ${name}\n`;
+            text += `*Policy No:* ${pNo}\n`;
+            text += `*Premium:* ₹${premium || 'N/A'}\n`;
+            text += `*Next FUP:* ${fup || 'N/A'}\n\n`;
+            
+            text += `LIC agent and Financial planner\n`;
+            text += `Madan Prajapat\n`;
+            text += `Mob. No. 9929326600`;
+            
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+    </script>
+</body>
+</html>
