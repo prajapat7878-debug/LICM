@@ -841,7 +841,27 @@
             text += `Mob. No. 9929326600`;
             
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-            window.open(whatsappUrl, '_blank');
+                    window.onload = function() {
+            try {
+                const savedLogo = localStorage.getItem('lic_app_logo');
+                if(savedLogo) {
+                    document.getElementById('appLogo').src = savedLogo;
+                }
+
+                const savedData = localStorage.getItem('lic_policies_data');
+                if (savedData) {
+                    allPolicies = JSON.parse(savedData);
+                    document.getElementById('sortSelect').value = "SNo-asc";
+                    setFupFilter('ALL'); 
+                } else {
+                    renderList([]); 
+                }
+            } catch (e) {
+                console.error("Local Storage Error:", e);
+                renderList([]); // एरर आने पर भी ऐप खाली खुलेगा, सफ़ेद नहीं रहेगा
+            }
+        }
+
         }
     </script>
 </body>
