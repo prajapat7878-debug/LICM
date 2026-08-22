@@ -1,23 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#003366">
-<script>
-  if ('serviceWorker' in navigator) {
-    // URL के हिसाब से सही पाथ लेगा
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker Registered'))
-      .catch(err => console.error('Service Worker Error:', err));
-  }
-</script>
+    <title>LIC Policy Manager</title>
+    
+    <!-- PWA Manifest & Meta -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#003366">
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/8/83/Life_Insurance_Corporation_of_India_logo.svg/1200px-Life_Insurance_Corporation_of_India_logo.svg.png">
 
- src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker Registered Successfully'))
+            .catch(err => console.log('Service Worker Error:', err));
+        });
+      }
+    </script>
+
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PapaParse for reading CSV files safely -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -68,11 +75,9 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <!-- Export Data Button -->
                     <button onclick="exportToCSV()" class="bg-white text-licBlue h-10 w-10 flex items-center justify-center rounded-full shadow hover:bg-gray-200 transition-colors flex-shrink-0" title="Download Updated CSV">
                         <i class="fa-solid fa-download text-lg"></i>
                     </button>
-                    <!-- Import CSV Button -->
                     <label for="csvUpload" class="cursor-pointer bg-licYellow text-licBlue h-10 w-10 flex items-center justify-center rounded-full shadow hover:bg-yellow-400 transition-colors flex-shrink-0" title="Upload New CSV">
                         <i class="fa-solid fa-file-csv text-lg"></i>
                     </label>
@@ -105,7 +110,6 @@
                     </button>
                 </div>
                 
-                <!-- Custom Date Picker -->
                 <div id="customDateContainer" class="hidden mt-3 p-3 bg-white rounded-xl shadow-sm border border-gray-200 flex gap-2 items-end">
                     <div class="flex-1">
                         <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">From Date</label>
@@ -181,10 +185,8 @@
         </button>
     </div>
 
-    <!-- Edit & Share Modal (Full Screen for Mobile) -->
+    <!-- Edit & Share Modal -->
     <div id="policyModal" class="fixed inset-0 z-50 hidden bg-gray-100 flex flex-col modal-transition opacity-0 pointer-events-none max-w-xl mx-auto">
-        
-        <!-- Modal Header -->
         <div class="bg-licBlue text-white px-4 py-4 shadow-md flex justify-between items-center z-10">
             <h3 class="text-lg font-bold flex items-center gap-2" id="modalTitle">
                 <i class="fa-solid fa-file-lines text-licYellow"></i> Policy Details
@@ -194,19 +196,15 @@
             </button>
         </div>
         
-        <!-- Modal Body (Scrollable with all fields) -->
         <div class="p-4 overflow-y-auto flex-grow bg-gray-100 pb-24" id="modalBody">
             <div class="flex flex-col gap-4">
-                
-                <!-- Personal Details Group -->
+                <!-- Personal Details -->
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
                     <p class="text-licBlue font-bold border-b border-gray-100 pb-2 mb-1"><i class="fa-solid fa-user-circle mr-1"></i> Personal Details</p>
-                    
                     <div class="flex flex-col">
                         <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Policy Holder Name</label>
                         <input type="text" id="edit_name" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
                     </div>
-                    
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col">
                             <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">DOB</label>
@@ -217,32 +215,27 @@
                             <input type="text" id="edit_mobile" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
                         </div>
                     </div>
-
                     <div class="flex flex-col">
                         <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Email</label>
                         <input type="email" id="edit_email" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
                     </div>
-
                     <div class="flex flex-col">
                         <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Address</label>
                         <textarea id="edit_address" rows="2" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm resize-none"></textarea>
                     </div>
-
                     <div class="flex flex-col">
                         <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Nominee</label>
                         <input type="text" id="edit_nominee" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
                     </div>
                 </div>
 
-                <!-- Policy Details Group -->
+                <!-- Policy Details -->
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
                     <p class="text-licBlue font-bold border-b border-gray-100 pb-2 mb-1"><i class="fa-solid fa-shield-halved mr-1"></i> Policy Details</p>
-                    
                     <div class="flex flex-col">
                         <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Policy Number</label>
                         <input type="text" id="edit_policyNo" class="w-full px-3 py-2.5 font-bold border border-gray-200 bg-gray-100 rounded-xl outline-none text-gray-800 text-sm">
                     </div>
-
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col">
                             <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Plan</label>
@@ -253,7 +246,6 @@
                             <input type="text" id="edit_doc" placeholder="DD/MM/YYYY" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
                         </div>
                     </div>
-
                     <div class="grid grid-cols-3 gap-3">
                         <div class="flex flex-col">
                             <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Term</label>
@@ -268,28 +260,24 @@
                             <input type="text" id="edit_mode" placeholder="Y/H/Q/M" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm uppercase">
                         </div>
                     </div>
-
                     <div class="flex flex-col">
                         <label class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Sum Assured (₹)</label>
                         <input type="number" id="edit_sumAssured" class="w-full px-3 py-2.5 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-sm">
                     </div>
                 </div>
 
-                <!-- Financial Group (Premium & FUP & Calculator) -->
+                <!-- Financial Group -->
                 <div class="bg-blue-50 p-4 rounded-2xl shadow-sm border border-blue-100 flex flex-col gap-3 relative">
                     <p class="text-licBlue font-bold border-b border-blue-200 pb-2 mb-1"><i class="fa-solid fa-indian-rupee-sign mr-1"></i> Premium & FUP</p>
-                    
                     <div class="flex flex-col">
                         <label class="text-[11px] font-bold text-licBlue mb-1 uppercase">Premium (₹)</label>
                         <input type="number" id="edit_premium" class="w-full px-3 py-2.5 bg-white font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-gray-900 text-sm">
                     </div>
-                    
                     <div class="flex flex-col">
                         <label class="text-[11px] font-bold text-licBlue mb-1 uppercase">Next FUP Date</label>
                         <input type="text" id="edit_fup" placeholder="DD/MM/YYYY" class="w-full px-3 py-2.5 bg-white font-bold border-2 border-licBlue rounded-xl focus:ring-2 focus:ring-licYellow outline-none text-licBlue text-sm">
                     </div>
-
-                    <!-- Calculate Total Premium Section -->
+                    
                     <div class="bg-green-50 p-3 rounded-xl border border-green-200 flex flex-col items-center justify-center gap-2 mt-2 shadow-sm">
                         <button onclick="calculateTotalPremium()" class="bg-[#1ebe57] text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md hover:bg-green-600 transition-colors flex items-center gap-2">
                             <i class="fa-solid fa-calculator"></i> Calculate Total Premium Paid
@@ -305,11 +293,9 @@
                 <div class="text-center h-6 mb-4">
                     <p id="saveMsg" class="text-green-600 font-bold text-sm hidden"><i class="fa-solid fa-check-circle"></i> Policy Saved Successfully!</p>
                 </div>
-
             </div>
         </div>
         
-        <!-- Modal Footer Actions (Sticky Bottom) -->
         <div class="absolute bottom-0 w-full bg-white p-4 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] flex gap-3 z-20">
             <button onclick="saveDetails()" class="flex-1 bg-licBlue text-white py-3.5 rounded-xl hover:bg-blue-800 transition-colors shadow-lg font-bold flex items-center justify-center gap-2 text-sm">
                 <i class="fa-solid fa-save"></i> Save All
@@ -327,29 +313,36 @@
         let currentTimelineFilter = 'ALL';
         let isAddingNew = false;
 
-        // --- Load Data from Browser Memory (Local Storage) on Startup ---
+        // Ensure errors don't stop the page from loading
         window.onload = function() {
-            const savedLogo = localStorage.getItem('lic_app_logo');
-            if(savedLogo) {
-                document.getElementById('appLogo').src = savedLogo;
-            }
+            try {
+                const savedLogo = localStorage.getItem('lic_app_logo');
+                if(savedLogo) {
+                    document.getElementById('appLogo').src = savedLogo;
+                }
 
-            const savedData = localStorage.getItem('lic_policies_data');
-            if (savedData) {
-                allPolicies = JSON.parse(savedData);
-                document.getElementById('sortSelect').value = "SNo-asc";
-                setFupFilter('ALL'); 
-            } else {
-                renderList([]); // Shows empty state asking to upload
+                const savedData = localStorage.getItem('lic_policies_data');
+                if (savedData) {
+                    allPolicies = JSON.parse(savedData);
+                    document.getElementById('sortSelect').value = "SNo-asc";
+                    setFupFilter('ALL'); 
+                } else {
+                    renderList([]); 
+                }
+            } catch (e) {
+                console.error("Storage Error:", e);
+                renderList([]);
             }
         }
 
-        // --- Save Data Permanently to Browser ---
         function saveToLocalStorage() {
-            localStorage.setItem('lic_policies_data', JSON.stringify(allPolicies));
+            try {
+                localStorage.setItem('lic_policies_data', JSON.stringify(allPolicies));
+            } catch (e) {
+                alert("Failed to save data permanently. Browser storage might be full.");
+            }
         }
 
-        // --- User Logo Upload ---
         function updateLogo(event) {
             const file = event.target.files[0];
             if (file) {
@@ -357,21 +350,19 @@
                 reader.onload = function(e) {
                     const logoData = e.target.result;
                     document.getElementById('appLogo').src = logoData;
-                    localStorage.setItem('lic_app_logo', logoData); // Save logo permanently
+                    try { localStorage.setItem('lic_app_logo', logoData); } catch(err){} 
                 }
                 reader.readAsDataURL(file);
             }
         }
 
-        // --- File Upload via PapaParse (CSV) ---
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const text = e.target.result;
-                processCSVData(text);
+                processCSVData(e.target.result);
             };
             reader.readAsText(file);
         }
@@ -393,64 +384,54 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    processParsedData(results.data);
+                    allPolicies = [];
+                    let serialCounter = 1;
+
+                    results.data.forEach(row => {
+                        const policyNo = row['Policy Number'] || row['Policy No'];
+                        const policyName = row['Policy Holder'] || row['Name'];
+                        
+                        if (policyNo && policyName) {
+                            let cleanedRow = { ...row };
+                            cleanedRow['Policy Number'] = String(policyNo).trim();
+                            cleanedRow['Policy Holder'] = String(policyName).trim();
+                            
+                            const existingSNo = parseInt(cleanedRow['SNo']);
+                            if (isNaN(existingSNo)) {
+                                cleanedRow['SNo'] = serialCounter;
+                            }
+                            
+                            allPolicies.push(cleanedRow);
+                            serialCounter++;
+                        }
+                    });
+
+                    saveToLocalStorage(); 
+                    document.getElementById('sortSelect').value = "SNo-asc";
+                    setFupFilter('ALL'); 
                 }
             });
         }
 
-        function processParsedData(jsonData) {
-            allPolicies = [];
-            let serialCounter = 1;
-
-            jsonData.forEach(row => {
-                const policyNo = row['Policy Number'] || row['Policy No'];
-                const policyName = row['Policy Holder'] || row['Name'];
-                
-                if (policyNo && policyName) {
-                    let cleanedRow = { ...row };
-                    cleanedRow['Policy Number'] = String(policyNo).trim();
-                    cleanedRow['Policy Holder'] = String(policyName).trim();
-                    
-                    const existingSNo = parseInt(cleanedRow['SNo']);
-                    if (isNaN(existingSNo)) {
-                        cleanedRow['SNo'] = serialCounter;
-                    }
-                    
-                    allPolicies.push(cleanedRow);
-                    serialCounter++;
-                }
-            });
-
-            saveToLocalStorage(); // Save new file to memory
-            document.getElementById('sortSelect').value = "SNo-asc";
-            setFupFilter('ALL'); 
-        }
-
-        // --- Export Data back to CSV ---
         function exportToCSV() {
             if(allPolicies.length === 0) {
                 alert("No data available to download!");
                 return;
             }
-            
             const csv = Papa.unparse(allPolicies);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
-            
             link.setAttribute("href", url);
             link.setAttribute("download", "updated_lic_policies.csv");
             link.style.visibility = 'hidden';
-            
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // --- FUP Timeline Filter Logic ---
         function setFupFilter(filterType) {
             currentTimelineFilter = filterType;
-            
             const ids = ['ALL', 'CURRENT', 'NEXT', 'LAST_6', 'CUSTOM'];
             ids.forEach(id => {
                 const btn = document.getElementById('filter_' + id);
@@ -494,7 +475,6 @@
                 sixMonthsAgo.setMonth(now.getMonth() - 6);
                 sixMonthsAgo.setDate(1); 
                 sixMonthsAgo.setHours(0,0,0,0);
-                
                 let startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
                 return fupDate >= sixMonthsAgo && fupDate < startOfCurrentMonth;
             }
@@ -513,7 +493,6 @@
             return true;
         }
 
-        // --- Search and Apply Filters ---
         function applyFilters() {
             const searchName = document.getElementById('searchName').value.toLowerCase();
             const searchNumber = document.getElementById('searchNumber').value.toLowerCase();
@@ -531,13 +510,10 @@
             handleSort();
         }
 
-        // --- Sorting Logic ---
         function getSortableDate(dateStr) {
             if (!dateStr || dateStr === '-' || dateStr === 'null') return '00000000';
             let parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
-            if (parts.length === 3) {
-                return parts[2] + parts[1].padStart(2, '0') + parts[0].padStart(2, '0');
-            }
+            if (parts.length === 3) return parts[2] + parts[1].padStart(2, '0') + parts[0].padStart(2, '0');
             return '00000000';
         }
 
@@ -607,7 +583,6 @@
                     <div class="absolute top-3 right-4 bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200">
                         #${sNo}
                     </div>
-                    
                     <div class="flex items-start gap-3 mb-4">
                         <div class="h-12 w-12 rounded-full bg-blue-50 border border-blue-100 text-licBlue flex items-center justify-center font-bold text-xl flex-shrink-0">
                             ${initial}
@@ -619,7 +594,6 @@
                             </button>
                         </div>
                     </div>
-                    
                     <div class="grid grid-cols-2 gap-2 bg-gray-50 rounded-xl p-3 border border-gray-100">
                         <div>
                             <p class="text-gray-400 font-bold text-[10px] uppercase tracking-wide">Premium</p>
@@ -637,11 +611,9 @@
             });
         }
 
-        // --- Edit / Add Modal Functions ---
         function openAddModal() {
             isAddingNew = true;
             currentEditingPolicy = null;
-
             document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-plus-circle text-licYellow"></i> Add New Policy';
             
             document.getElementById('edit_name').value = '';
@@ -681,7 +653,6 @@
 
             isAddingNew = false;
             currentEditingPolicy = policy;
-
             document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-file-lines text-licYellow"></i> Policy Details';
 
             document.getElementById('edit_name').value = policy['Policy Holder'] || '';
@@ -709,7 +680,6 @@
 
             const modal = document.getElementById('policyModal');
             modal.classList.remove('hidden');
-            
             setTimeout(() => {
                 modal.classList.remove('opacity-0', 'pointer-events-none');
                 modal.classList.add('opacity-100');
@@ -718,10 +688,8 @@
 
         function closeModal() {
             const modal = document.getElementById('policyModal');
-            
             modal.classList.remove('opacity-100');
             modal.classList.add('opacity-0', 'pointer-events-none');
-            
             setTimeout(() => {
                 modal.classList.add('hidden');
                 currentEditingPolicy = null;
@@ -767,7 +735,7 @@
             p['Premium'] = document.getElementById('edit_premium').value.trim();
             p['FUP Date'] = document.getElementById('edit_fup').value.trim();
             
-            saveToLocalStorage(); // UPDATE MEMORY
+            saveToLocalStorage(); 
             
             const saveMsg = document.getElementById('saveMsg');
             saveMsg.classList.remove('hidden');
@@ -776,13 +744,10 @@
             
             setTimeout(() => {
                 saveMsg.classList.add('hidden');
-                if (isAddingNew) {
-                    closeModal();
-                }
+                if (isAddingNew) closeModal();
             }, 1500);
         }
 
-        // --- Calculate Total Premium Paid ---
         function calculateTotalPremium() {
             let docStr = document.getElementById('edit_doc').value.trim();
             let fupStr = document.getElementById('edit_fup').value.trim();
@@ -790,7 +755,7 @@
             let mode = String(document.getElementById('edit_mode').value).toUpperCase().trim();
 
             if(!docStr || !fupStr || !premiumStr || !mode) {
-                alert("Ensure DOC, FUP Date, Premium, and Mode are correctly filled in DD/MM/YYYY format.");
+                alert("Ensure DOC, FUP Date, Premium, and Mode are filled.");
                 return;
             }
 
@@ -821,7 +786,6 @@
             document.getElementById('totalPremiumContainer').classList.remove('hidden');
         }
 
-        // --- WhatsApp Share ---
         function shareViaWhatsApp() {
             let name = document.getElementById('edit_name').value.trim();
             let pNo = document.getElementById('edit_policyNo').value.trim();
@@ -841,28 +805,9 @@
             text += `Mob. No. 9929326600`;
             
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-                    window.onload = function() {
-            try {
-                const savedLogo = localStorage.getItem('lic_app_logo');
-                if(savedLogo) {
-                    document.getElementById('appLogo').src = savedLogo;
-                }
-
-                const savedData = localStorage.getItem('lic_policies_data');
-                if (savedData) {
-                    allPolicies = JSON.parse(savedData);
-                    document.getElementById('sortSelect').value = "SNo-asc";
-                    setFupFilter('ALL'); 
-                } else {
-                    renderList([]); 
-                }
-            } catch (e) {
-                console.error("Local Storage Error:", e);
-                renderList([]); // एरर आने पर भी ऐप खाली खुलेगा, सफ़ेद नहीं रहेगा
-            }
-        }
-
+            window.open(whatsappUrl, '_blank');
         }
     </script>
 </body>
 </html>
+
