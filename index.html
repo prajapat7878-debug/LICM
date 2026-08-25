@@ -74,7 +74,7 @@
                     <label for="csvUpload" class="cursor-pointer bg-licYellow text-licBlue h-9 w-9 flex items-center justify-center rounded-xl shadow-md hover:bg-yellow-400 transition-colors" title="Import CSV">
                         <i class="fa-solid fa-file-import text-sm"></i>
                     </label>
-                    <input type="file" id="csvUpload" accept=".csv" class="hidden" onchange="handleFileUpload(event)">
+                    <input type="file" id="csvUpload" accept=".csv, text/csv, text/*, application/vnd.ms-excel" class="hidden" onchange="handleFileUpload(event)">
                 </div>
             </div>
         </header>
@@ -486,6 +486,18 @@
             return '';
         }
 
+        // --- Dynamic Flatpickr Value Setter ---
+        function setDateValue(id, value) {
+            const el = document.getElementById(id);
+            if (el) {
+                if (el._flatpickr) {
+                    el._flatpickr.setDate(value);
+                } else {
+                    el.value = value;
+                }
+            }
+        }
+
         // --- Core LIC Math: Dues & Revival Calculation ---
         function calculatePolicyDues(policy) {
             const fupStr = policy['FUP Date'];
@@ -669,19 +681,29 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 processCSVData(e.target.result);
+                event.target.value = ''; // Reset input to allow re-uploading same file
             };
             reader.readAsText(file);
         }
 
         function processCSVData(csvText) {
-            let lines = csvText.split('\n');
-            let headerIndex = 0;
+            // Normalize newlines to prevent parsing errors
+            let normalizedText = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            let lines = normalizedText.split('\n');
+            let headerIndex = -1;
             
             for(let i = 0; i < lines.length; i++) {
-                if(lines[i].includes('Policy Number') && (lines[i].includes('Policy Holder') || lines[i].includes('Name'))) {
+                let rowStr = lines[i].toLowerCase();
+                if((rowStr.includes('policy number') || rowStr.includes('policy no')) && 
+                   (rowStr.includes('policy holder') || rowStr.includes('name'))) {
                     headerIndex = i;
                     break;
                 }
+            }
+            
+            if (headerIndex === -1) {
+                alert("Error: Invalid CSV format. Could not find 'Policy Number' header.");
+                return;
             }
             
             let validCSV = lines.slice(headerIndex).join('\n');
@@ -1117,18 +1139,20 @@
             document.getElementById('edit_policyNo').classList.remove('bg-gray-100');
             document.getElementById('edit_policyNo').classList.add('bg-white');
             
-            document.getElementById('edit_dob').value = '';
+            setDateValue('edit_dob', '');
+            setDateValue('edit_doc', '');
+            setDateValue('edit_fup', '');
+
             document.getElementById('edit_mobile').value = '';
             document.getElementById('edit_address').value = '';
             document.getElementById('edit_nominee').value = '';
             document.getElementById('edit_plan').value = '';
-            document.getElementById('edit_doc').value = '';
             document.getElementById('edit_term').value = '';
             document.getElementById('edit_ppt').value = '';
             document.getElementById('edit_mode').value = 'Y';
             document.getElementById('edit_sumAssured').value = '';
             document.getElementById('edit_premium').value = '';
-            document.getElementById('edit_fup').value = '';
+            
             document.getElementById('saveMsg').classList.add('hidden');
 
             const modal = document.getElementById('policyModal');
@@ -1150,9 +1174,10 @@
             document.getElementById('edit_policyNo').readOnly = true;
             document.getElementById('edit_policyNo').classList.add('bg-gray-100');
 
-            document.getElementById('edit_dob').value = formatToDateInput(policy['DOB']);
-            document.getElementById('edit_doc').value = formatToDateInput(policy['Commecement Date'] || policy['Commencement Date']);
-            document.getElementById('edit_fup').value = formatToDateInput(policy['FUP Date']);
+            // Set Date values safely handling Flatpickr overrides
+            setDateValue('edit_dob', formatToDateInput(policy['DOB']));
+            setDateValue('edit_doc', formatToDateInput(policy['Commecement Date'] || policy['Commencement Date']));
+            setDateValue('edit_fup', formatToDateInput(policy['FUP Date']));
 
             document.getElementById('edit_mobile').value = policy['Mobile'] || '';
             document.getElementById('edit_address').value = policy['Address'] || '';
