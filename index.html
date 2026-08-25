@@ -16,6 +16,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Flatpickr Datepicker Library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
     <script>
         tailwind.config = {
@@ -88,8 +91,14 @@
                         <button onclick="setFupFilter('ALL')" id="filter_ALL" class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-licBlue text-white shadow-sm border border-licBlue transition-all">
                             All Policies
                         </button>
+                        <button onclick="setFupFilter('INFORCE')" id="filter_INFORCE" class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-emerald-600 border border-emerald-200 shadow-sm transition-all">
+                            Inforce
+                        </button>
+                        <button onclick="setFupFilter('GRACE')" id="filter_GRACE" class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-amber-600 border border-amber-200 shadow-sm transition-all">
+                            Grace Period
+                        </button>
                         <button onclick="setFupFilter('DUE')" id="filter_DUE" class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-rose-600 border border-rose-200 shadow-sm transition-all">
-                            Overdue / Lapsed
+                            Lapsed / Overdue
                         </button>
                         <button onclick="setFupFilter('CURRENT')" id="filter_CURRENT" class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-700 border border-gray-200 shadow-sm transition-all">
                             This Month
@@ -106,11 +115,11 @@
                     <div id="customDateContainer" class="hidden mt-2.5 p-3 bg-white rounded-2xl shadow-sm border border-gray-200 flex gap-2 items-end">
                         <div class="flex-1">
                             <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">From</label>
-                            <input type="date" id="customFromDate" class="w-full text-xs p-2 font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-licBlue">
+                            <input type="text" id="customFromDate" class="w-full text-xs p-2 font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-licBlue">
                         </div>
                         <div class="flex-1">
                             <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">To</label>
-                            <input type="date" id="customToDate" class="w-full text-xs p-2 font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-licBlue">
+                            <input type="text" id="customToDate" class="w-full text-xs p-2 font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-licBlue">
                         </div>
                         <button onclick="applyFilters()" class="bg-licBlue text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-licDark transition-colors">
                             Apply
@@ -353,7 +362,7 @@
                 <div class="grid grid-cols-2 gap-2.5">
                     <div class="flex flex-col">
                         <label class="text-[10px] font-bold text-gray-500 mb-1 uppercase">DOB</label>
-                        <input type="date" id="edit_dob" class="w-full px-3 py-2 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-xs text-gray-700">
+                        <input type="text" id="edit_dob" class="w-full px-3 py-2 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-xs text-gray-700 bg-white">
                     </div>
                     <div class="flex flex-col">
                         <label class="text-[10px] font-bold text-gray-500 mb-1 uppercase">Mobile</label>
@@ -390,7 +399,7 @@
                     </div>
                     <div class="flex flex-col">
                         <label class="text-[10px] font-bold text-gray-500 mb-1 uppercase">Commencement (DOC)</label>
-                        <input type="date" id="edit_doc" onchange="triggerDynamicModalCalcs()" class="w-full px-3 py-2 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-xs text-gray-700">
+                        <input type="text" id="edit_doc" onchange="triggerDynamicModalCalcs()" class="w-full px-3 py-2 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-xs text-gray-700 bg-white">
                     </div>
                 </div>
 
@@ -428,7 +437,7 @@
 
                 <div class="flex flex-col bg-yellow-50 p-3 rounded-xl border border-yellow-200">
                     <label class="text-[10px] font-black text-licBlue mb-1 uppercase">Next FUP Date (Calendar)</label>
-                    <input type="date" id="edit_fup" onchange="triggerDynamicModalCalcs()" class="w-full px-3 py-2 bg-white font-black border-2 border-licBlue rounded-xl outline-none text-xs text-licBlue shadow-sm">
+                    <input type="text" id="edit_fup" onchange="triggerDynamicModalCalcs()" class="w-full px-3 py-2 bg-white font-black border-2 border-licBlue rounded-xl outline-none text-xs text-licBlue shadow-sm">
                 </div>
             </div>
 
@@ -729,13 +738,31 @@
         // --- Filter Logic ---
         function setFupFilter(filterType) {
             currentTimelineFilter = filterType;
-            const ids = ['ALL', 'DUE', 'CURRENT', 'NEXT', 'CUSTOM'];
+            const ids = ['ALL', 'INFORCE', 'GRACE', 'DUE', 'CURRENT', 'NEXT', 'CUSTOM'];
             ids.forEach(id => {
                 const btn = document.getElementById('filter_' + id);
-                if (id === filterType) {
-                    btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-licBlue text-white shadow-sm border border-licBlue transition-all";
-                } else {
-                    btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-700 border border-gray-200 shadow-sm transition-all";
+                if (btn) {
+                    if (id === filterType) {
+                        if (id === 'INFORCE') {
+                            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-emerald-600 text-white shadow-sm border border-emerald-600 transition-all";
+                        } else if (id === 'GRACE') {
+                            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-amber-500 text-white shadow-sm border border-amber-500 transition-all";
+                        } else if (id === 'DUE') {
+                            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-rose-600 text-white shadow-sm border border-rose-600 transition-all";
+                        } else {
+                            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-licBlue text-white shadow-sm border border-licBlue transition-all";
+                        }
+                    } else {
+                        if (id === 'INFORCE') {
+                            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-emerald-600 border border-emerald-200 shadow-sm transition-all";
+                        } else if (id === 'GRACE') {
+                            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-amber-600 border border-amber-200 shadow-sm transition-all";
+                        } else if (id === 'DUE') {
+                            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-rose-600 border border-rose-200 shadow-sm transition-all";
+                        } else {
+                            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-700 border border-gray-200 shadow-sm transition-all";
+                        }
+                    }
                 }
             });
 
@@ -760,7 +787,13 @@
 
                 if (currentTimelineFilter === 'DUE') {
                     const duesInfo = calculatePolicyDues(policy);
-                    matchesTimeline = duesInfo.status === 'LAPSED' || duesInfo.duesCount > 0;
+                    matchesTimeline = duesInfo.status === 'LAPSED';
+                } else if (currentTimelineFilter === 'INFORCE') {
+                    const duesInfo = calculatePolicyDues(policy);
+                    matchesTimeline = duesInfo.status === 'INFORCE';
+                } else if (currentTimelineFilter === 'GRACE') {
+                    const duesInfo = calculatePolicyDues(policy);
+                    matchesTimeline = duesInfo.status === 'GRACE';
                 } else if (currentTimelineFilter !== 'ALL') {
                     matchesTimeline = checkFupDateMatch(policy['FUP Date']);
                 }
@@ -934,7 +967,7 @@
             });
 
             document.getElementById('dueViewTotalAmount').innerText = '₹ ' + totalRecovery.toLocaleString('en-IN');
-            document.getElementById('dueViewTotalCount').innerText = `${overdueList.length} Policies Require Immediate Follow-up`;
+            document.getElementById('dueViewTotalCount').innerText = `${overdueList.length} Policies Overdue / Lapsed`;
 
             if (overdueList.length === 0) {
                 container.innerHTML = `<div class="p-8 text-center text-gray-400 font-bold text-xs bg-white rounded-2xl border border-gray-200">Great! No overdue or lapsed policies at this moment.</div>`;
@@ -1249,6 +1282,19 @@
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
             window.open(whatsappUrl, '_blank');
         }
+        
+        // Initialize Custom Calendar (Flatpickr)
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateConfig = { 
+                dateFormat: "Y-m-d", 
+                allowInput: true 
+            };
+            flatpickr("#customFromDate", dateConfig);
+            flatpickr("#customToDate", dateConfig);
+            flatpickr("#edit_dob", dateConfig);
+            flatpickr("#edit_doc", dateConfig);
+            flatpickr("#edit_fup", dateConfig);
+        });
     </script>
 </body>
 </html>
