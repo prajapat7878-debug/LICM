@@ -366,7 +366,12 @@
                     </div>
                     <div class="flex flex-col">
                         <label class="text-[10px] font-bold text-gray-500 mb-1 uppercase">Mobile</label>
-                        <input type="text" id="edit_mobile" class="w-full px-3 py-2 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-xs">
+                        <div class="flex gap-2">
+                            <input type="text" id="edit_mobile" class="w-full px-3 py-2 bg-gray-50 font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-licBlue outline-none text-xs">
+                            <button type="button" onclick="callClientMobile()" class="bg-emerald-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 flex items-center gap-1.5 flex-shrink-0 shadow-sm active:scale-95 transition-all" title="Direct Call">
+                                <i class="fa-solid fa-phone"></i> Call
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -468,20 +473,35 @@
         let activeTab = 'policies';
 
         // --- Standard Helper Functions ---
+        // UPDATED: Now returns DD/MM/YYYY so that it populates the popup correctly
         function formatToDateInput(dateStr) {
             if (!dateStr || dateStr === '-' || dateStr === 'null') return '';
             let parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
             if (parts.length === 3) {
-                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                // Returns DD/MM/YYYY format 
+                return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
             }
             return '';
         }
 
+        // UPDATED: Parses DD/MM/YYYY (from Flatpickr) to store or use correctly
         function formatToDDMMYYYY(dateStr) {
             if (!dateStr) return '';
+            // If already in DD/MM/YYYY format, format padding and return
+            if (dateStr.includes('/')) {
+                let parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+                }
+                return dateStr;
+            }
+            // Fallback if somehow it's YYYY-MM-DD
             let parts = dateStr.split('-');
             if (parts.length === 3) {
-                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                if(parts[0].length === 4) { // YYYY-MM-DD
+                    return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+                }
+                return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
             }
             return '';
         }
@@ -652,6 +672,15 @@
             }
         };
 
+        function callClientMobile() {
+            const mobile = document.getElementById('edit_mobile').value.trim();
+            if (!mobile || mobile === '-' || mobile === 'null') {
+                alert("Mobile number is not available.");
+                return;
+            }
+            window.location.href = 'tel:' + mobile;
+        }
+
         function saveToLocalStorage() {
             try {
                 localStorage.setItem('lic_policies_data', JSON.stringify(allPolicies));
@@ -745,16 +774,23 @@
                 alert("No policy data available to export.");
                 return;
             }
-            const csv = Papa.unparse(allPolicies);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "lic_policies_export.csv");
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            try {
+                const csv = Papa.unparse(allPolicies);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "lic_policies_updated.csv";
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                }, 1000);
+            } catch (err) {
+                alert("Export error: " + err.message);
+            }
         }
 
         // --- Filter Logic ---
@@ -1314,12 +1350,19 @@
                 dateFormat: "Y-m-d", 
                 allowInput: true 
             };
+            const popupDateConfig = { 
+                dateFormat: "d/m/Y",  // Changed to DD/MM/YYYY for the popup fields
+                allowInput: true 
+            };
             flatpickr("#customFromDate", dateConfig);
             flatpickr("#customToDate", dateConfig);
-            flatpickr("#edit_dob", dateConfig);
-            flatpickr("#edit_doc", dateConfig);
-            flatpickr("#edit_fup", dateConfig);
+            
+            // Apply new config to Modal fields
+            flatpickr("#edit_dob", popupDateConfig);
+            flatpickr("#edit_doc", popupDateConfig);
+            flatpickr("#edit_fup", popupDateConfig);
         });
     </script>
 </body>
 </html>
+
