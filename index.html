@@ -302,12 +302,12 @@
             <!-- SMART CALCULATORS SUMMARY WIDGET (REVIVAL & MATURITY) -->
             <div id="smartCalcWidget" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
                 <p class="text-xs font-black text-licBlue uppercase tracking-wider border-b border-gray-100 pb-2 flex items-center justify-between">
-                    <div><i class="fa-solid fa-brain mr-1 text-licYellow"></i> Status & Projections</div>
-                    <div id="m_statusBadge" class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase">Active</div>
+                    <span><i class="fa-solid fa-brain mr-1 text-licYellow"></i> Status & Projections</span>
+                    <span id="m_statusBadge" class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase">Active</span>
                 </p>
 
                 <!-- Revival & Outstanding Due Box -->
-                <div id="revivalAlertBox" class="p-3 bg-rose-50 rounded-xl border border-rose-200 flex flex-col gap-1.5">
+                <div id="revivalAlertBox" class="p-3 bg-rose-50 rounded-xl border border-rose-200 flex flex-col gap-1.5 relative">
                     <div class="flex justify-between items-center">
                         <p class="text-[11px] font-extrabold text-rose-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Premium Overdue</p>
                         <p class="text-xs font-black text-rose-700" id="m_duesCount">0 Dues Pending</p>
@@ -318,13 +318,20 @@
                             <p class="text-xs font-extrabold text-gray-800 mt-0.5" id="m_baseDue">₹ 0</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-bold text-gray-500 uppercase">Late Fee (9.5%)</p>
+                            <p class="text-[9px] font-bold text-gray-500 uppercase">Late Fee</p>
                             <p class="text-xs font-extrabold text-rose-600 mt-0.5" id="m_lateFee">₹ 0</p>
                         </div>
                         <div>
                             <p class="text-[9px] font-bold text-gray-500 uppercase">Revival Total</p>
                             <p class="text-xs font-black text-emerald-700 mt-0.5" id="m_totalRevival">₹ 0</p>
                         </div>
+                    </div>
+                    <!-- New WhatsApp Share Dues Button -->
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-[9px] font-medium text-rose-400 italic">*Pay to avoid policy lapse</span>
+                        <button onclick="shareRevivalDetails()" class="bg-[#25D366] text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-emerald-600 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-brands fa-whatsapp"></i> Share Dues
+                        </button>
                     </div>
                 </div>
 
@@ -473,21 +480,17 @@
         let activeTab = 'policies';
 
         // --- Standard Helper Functions ---
-        // UPDATED: Now returns DD/MM/YYYY so that it populates the popup correctly
         function formatToDateInput(dateStr) {
             if (!dateStr || dateStr === '-' || dateStr === 'null') return '';
             let parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
             if (parts.length === 3) {
-                // Returns DD/MM/YYYY format 
                 return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
             }
             return '';
         }
 
-        // UPDATED: Parses DD/MM/YYYY (from Flatpickr) to store or use correctly
         function formatToDDMMYYYY(dateStr) {
             if (!dateStr) return '';
-            // If already in DD/MM/YYYY format, format padding and return
             if (dateStr.includes('/')) {
                 let parts = dateStr.split('/');
                 if (parts.length === 3) {
@@ -495,15 +498,31 @@
                 }
                 return dateStr;
             }
-            // Fallback if somehow it's YYYY-MM-DD
             let parts = dateStr.split('-');
             if (parts.length === 3) {
-                if(parts[0].length === 4) { // YYYY-MM-DD
+                if(parts[0].length === 4) { 
                     return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
                 }
                 return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
             }
             return '';
+        }
+
+        // --- WhatsApp Helper Function (Triggers Direct Contact) ---
+        function getWhatsAppUrl(mobile, text) {
+            let phoneParam = '';
+            if (mobile && mobile !== '-' && mobile !== 'null') {
+                let cleanMobile = mobile.replace(/\\D/g, ''); // Remove non-digits
+                if (cleanMobile.length === 10) {
+                    cleanMobile = '91' + cleanMobile; // Add India code if exactly 10 digits
+                }
+                if (cleanMobile.length >= 10) {
+                    phoneParam = cleanMobile;
+                    return `https://wa.me/${phoneParam}?text=${encodeURIComponent(text)}`;
+                }
+            }
+            // Fallback if no valid mobile found
+            return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
         }
 
         // --- Dynamic Flatpickr Value Setter ---
@@ -710,13 +729,12 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 processCSVData(e.target.result);
-                event.target.value = ''; // Reset input to allow re-uploading same file
+                event.target.value = ''; 
             };
             reader.readAsText(file);
         }
 
         function processCSVData(csvText) {
-            // Normalize newlines to prevent parsing errors
             let normalizedText = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             let lines = normalizedText.split('\n');
             let headerIndex = -1;
@@ -1145,7 +1163,6 @@
                     
                     let monthsDiff = (fup.getFullYear() - doc.getFullYear()) * 12 + (fup.getMonth() - doc.getMonth());
                     
-                    // Adjust if backdated or day varies slightly 
                     let dayDiff = fup.getDate() - doc.getDate();
                     if (dayDiff < -15) monthsDiff--;
                     
@@ -1210,7 +1227,6 @@
             document.getElementById('edit_policyNo').readOnly = true;
             document.getElementById('edit_policyNo').classList.add('bg-gray-100');
 
-            // Set Date values safely handling Flatpickr overrides
             setDateValue('edit_dob', formatToDateInput(policy['DOB']));
             setDateValue('edit_doc', formatToDateInput(policy['Commecement Date'] || policy['Commencement Date']));
             setDateValue('edit_fup', formatToDateInput(policy['FUP Date']));
@@ -1318,7 +1334,8 @@
             text += `*Madan Prajapat*\n`;
             text += `*Mob. No. 9929326600*`;
             
-            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+            // Generate direct wa.me link if mobile is present
+            const whatsappUrl = getWhatsAppUrl(p['Mobile'], text);
             window.open(whatsappUrl, '_blank');
         }
 
@@ -1327,6 +1344,7 @@
             let pNo = document.getElementById('edit_policyNo').value.trim();
             let premium = document.getElementById('edit_premium').value.trim();
             let fup = formatToDDMMYYYY(document.getElementById('edit_fup').value);
+            let mobile = document.getElementById('edit_mobile').value.trim();
             
             if (!pNo) return;
             
@@ -1340,7 +1358,42 @@
             text += `Madan Prajapat\n`;
             text += `Mob. No. 9929326600`;
             
-            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+            const whatsappUrl = getWhatsAppUrl(mobile, text);
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // New function to share specific Revival/Dues detailed breakdown
+        function shareRevivalDetails() {
+            let name = document.getElementById('edit_name').value.trim();
+            let pNo = document.getElementById('edit_policyNo').value.trim();
+            let mobile = document.getElementById('edit_mobile').value.trim();
+            
+            const fakePolicy = {
+                'FUP Date': formatToDDMMYYYY(document.getElementById('edit_fup').value),
+                'Premium': document.getElementById('edit_premium').value,
+                'Mode': document.getElementById('edit_mode').value
+            };
+            const dues = calculatePolicyDues(fakePolicy);
+            
+            if (dues.duesCount === 0) {
+                alert("Iss policy me koi pending dues nahi hai.");
+                return;
+            }
+
+            let text = `*LIC Policy Revival Notice* ⚠️\n\n`;
+            text += `*Name:* ${name}\n`;
+            text += `*Policy No:* ${pNo}\n\n`;
+            text += `Aapki policy ka premium due (FUP: ${fakePolicy['FUP Date']}) ho chuka hai. Kripya samay par jama karein.\n\n`;
+            text += `*Pending Dues:* ${dues.duesCount}\n`;
+            text += `*Base Premium:* ₹ ${dues.baseDue.toLocaleString('en-IN')}\n`;
+            text += `*Late Fee (Interest):* ₹ ${dues.lateFee.toLocaleString('en-IN')}\n`;
+            text += `*Total Revival Amount:* ₹ ${dues.totalRevival.toLocaleString('en-IN')}\n\n`;
+            
+            text += `LIC agent and Financial planner\n`;
+            text += `Madan Prajapat\n`;
+            text += `Mob. No. 9929326600`;
+            
+            const whatsappUrl = getWhatsAppUrl(mobile, text);
             window.open(whatsappUrl, '_blank');
         }
         
@@ -1351,7 +1404,7 @@
                 allowInput: true 
             };
             const popupDateConfig = { 
-                dateFormat: "d/m/Y",  // Changed to DD/MM/YYYY for the popup fields
+                dateFormat: "d/m/Y",  
                 allowInput: true 
             };
             flatpickr("#customFromDate", dateConfig);
